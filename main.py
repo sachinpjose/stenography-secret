@@ -1,23 +1,8 @@
 # Import libraries
+import sys
 import cv2
 import numpy as np
-import pdb
 
-# [13 17 22]
-# [15 19 24]
-# [17 21 26]
-# 0111001101100101011000110111001001100101011101000010110100100011001011010010001100101101
-# [12 16 21]
-# [15 19 24]
-# [17 21 26]
-# 00111011
-# [17 21 26]
-# [15 19 24]
-# [15 19 24]
-# 01101101
-# [17 21 26]
-# [19 23 28]
-# 10110110
 
 def convert_to_binary(message):
     if isinstance(message, str):
@@ -65,43 +50,22 @@ def hide_data(image, message):
         raise ValueError("Insufficient bytes in image to encode the message.")
 
     message_bytes = convert_to_binary(message)
-    print(message_bytes)
     message_length = len(message_bytes)
-    print(message_length)
     index = 0
 
     for pixels in image:
-        print(pixels.shape)
-        print(len(pixels))
         # pdb.set_trace()
         for pixel in pixels:
-            print(pixel)
-            r, g, b = convert_to_binary(pixel)
-            # Lets modify the Least significant bit in the pixels
-            if index < message_length:
-                # Hide the data in last bit of the red pixel
-                print(pixel[0])
-                pixel[0] = int(r[:-1] + message_bytes[index], 2)
-                print(pixel[0])
-                index += 1
-
-            if index < message_length:
-                # Hide the data in last bit of the green pixel
-                print(pixel[1])
-                pixel[1] = int(g[:-1] + message_bytes[index], 2)
-                print(pixel[1])
-                index += 1
-
-            if index < message_length:
-                # Hide the data in last bit of the blue pixel
-                print(pixel[2])
-                pixel[2] = int(b[:-1] + message_bytes[index], 2)
-                print(pixel[2])
-                index += 1
-            #  If the message length is greater than index, then we break the loop
-            if index >= message_length:
-                print(image[0][0])
-                return image
+            # value for r, g, b will be returned
+            color = convert_to_binary(pixel)
+            for idx, x in enumerate(color):
+                if index >= message_length:
+                    return image
+                # Lets modify the Least significant bit in the pixels
+                if index < message_length:
+                    # Hide the data in last bit of the red pixel
+                    pixel[idx] = int(x[:-1] + message_bytes[index], 2)
+                    index += 1
     return image
 
 
@@ -111,31 +75,13 @@ def unhide_data(image):
     binary_data = ""
     for pixels in image:
         for pixel in pixels:
-            print(pixel)
-            # r, g, b = convert_to_binary(pixel)  # convert the red,green and blue values into binary
-            # binary_data += r[-1]  # extracting data from the least significant bit of red pixel
-            # binary_data += g[-1]  # extracting data from green pixel
-            # binary_data += b[-1]  # extracting data from blue pixel
-
             for i in convert_to_binary(pixel):
                 binary_data += i[-1]
                 if len(binary_data) == 8:
-                    print(binary_data)
                     decoded_msg += chr(int(str(binary_data).strip(), 2))
                     binary_data = ""
-                    print(decoded_msg)
                 if decoded_msg[-5:] == "-#-#-":
                     return decoded_msg[:-5]
-
-    #         print(binary_data)
-    # # Split the bytes into separate by 8 bits
-    # data = [binary_data[i: i + 8] for i in range(0, len(binary_data), 8)]
-    # decoded_data = ""
-    # for i in data:
-    #     decoded_data += chr(int(i, 2))
-    #     print(decoded_data)
-    #     if decoded_data[-5:] == "-#-#-":
-    #         break
     return decoded_msg[:-5]
 
 
@@ -147,6 +93,10 @@ def encode():
         raise ValueError("Image name is empty.")
     image = cv2.imread(image_name)  # Read the image  using cv2 library.
 
+    if image is None:
+        print("Unable to read the image or image doesn't exist.\nPlease check the input image path.")
+        sys.exit(1)
+
     message = input("Enter the message to encode : ")
     if not len(message):
         print("Message is empty.")
@@ -156,14 +106,16 @@ def encode():
     steganography_image = hide_data(image, message)
     #  File name for saving the encoded image.
     steganography_image_name = input("Enter the name for new encoded image(with extension) : ")
-    cv2.imwrite(steganography_image_name, steganography_image)  # save the encoded image
+    cv2.imwrite(f"{steganography_image_name}.png", steganography_image)  # save the encoded image
 
 
 # Decode the message from image
 def decode():
     steganograph_image = input("Enter the name of the steganographed image (with extension) : ")
-    image = cv2.imread(steganograph_image)  # Todo : check the image available or not
-    print(image[0][0])
+    image = cv2.imread(steganograph_image)
+    if image is None:
+        print("Unable to read the image or image doesn't exist.\nPlease check the input image path.")
+        sys.exit(1)
     message = unhide_data(image)
     return message
 
@@ -173,7 +125,7 @@ def main():
     while True:
 
         user_input = int(input("Welcome to Image stenography \n 1. Enter 1 to encode the data \n"
-                               " 2. Enter 2 to decode the image. \n 3. Enter 3 to Quit.\n\n Enter your input : "))
+                               " 2. Enter 2 to decode the image. \n 3. Enter 3 to Quit.\n\nEnter your input : "))
 
         if user_input == 1:
             print("Encoding...")
@@ -183,7 +135,7 @@ def main():
         elif user_input == 2:
             print("Decoding...")
             message = decode()
-            print(f"The hidden message in the image is {message}")
+            print(f"The hidden message in the image is : \n{message}")
             break
 
         elif user_input == 3:
