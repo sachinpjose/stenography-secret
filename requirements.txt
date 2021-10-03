@@ -1,0 +1,8 @@
+cffi==1.14.6
+cryptography==3.4.8
+numpy==1.21.2
+opencv-python==4.5.3.56
+pixels==0.0.1a0
+pyasn1==0.4.8
+pycparser==2.20
+rsa==4.7.2
